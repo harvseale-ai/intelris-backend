@@ -55,18 +55,23 @@ export class MembersMappingService {
       committeeRoles: this.mapCommitteeRoles(committees),
     };
 
-    let classifications = await this.classificationService.findAll();
+  let classifications = await this.classificationService.findAll();
 
-    let classificationResult = { topicIds: [], sectionIds: [], regionIds: [], departmentIds: [] } as any;
-    try {
-      classificationResult = await this.openAIService.generateMemberClassification(aggregatedMember, classifications, {
-        temperature: 0,
-      });
-    } catch (e) {
-      classificationResult = { topicIds: [], sectionIds: [], regionIds: [], departmentIds: [] };
-    }
+  let classificationResult = { topicIds: [], sectionIds: [], regionIds: [], departmentIds: [] } as any;
+      try {
+        classificationResult = await this.openAIService.generateMemberClassification(
+        aggregatedMember,
+        classifications,
+  {
+      temperature: 0,
+        },
+      );
+  } catch (e) {
+  console.error(`Classification failed for ${nameDisplayAs} (${politicianId})`, e);
+  classificationResult = { topicIds: [], sectionIds: [], regionIds: [], departmentIds: [] };
+  }
 
-    const memberData = {
+  const memberData = {
       politicianId,
       nameDisplayAs,
       membershipFromId,
@@ -81,9 +86,9 @@ export class MembersMappingService {
       sectorIds: classificationResult.sectionIds,
       regionIds: classificationResult.regionIds,
       departmentIds: classificationResult.departmentIds,
-    } as IMember;
+  } as IMember;
 
-    return memberData;
+  return memberData;
   }
 
   private mapPartyAffiliation(party: any): PartyAffiliationDto {
