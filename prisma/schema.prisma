@@ -47,7 +47,20 @@ model ClassificationItem {
   createdAt   DateTime           @default(now())
   updatedAt   DateTime           @default(now()) @updatedAt
 
-  politicianTopics PoliticianTopic[]
+  politicianTopics       PoliticianTopic[]
+  politicianSections     PoliticianSection[]
+  politicianRegions      PoliticianRegion[]
+  politicianDepartments  PoliticianDepartment[]
+
+  politicianNewsTopics       PoliticianNewsTopic[]
+  politicianNewsSections     PoliticianNewsSection[]
+  politicianNewsRegions      PoliticianNewsRegion[]
+  politicianNewsDepartments  PoliticianNewsDepartment[]
+
+  newsTopics       NewsTopic[]
+  newsSections     NewsSection[]
+  newsRegions      NewsRegion[]
+  newsDepartments  NewsDepartment[]
 
   @@map("classification_items")
   @@index([type])
@@ -66,23 +79,194 @@ model Politician {
   latestPartyId       Int?      @map("latest_party_id")
   thumbnailUrl        String?   @map("thumbnail_url")
   createdAt           DateTime  @default(now()) @map("created_at")
-  updatedAt           DateTime  @updatedAt @map("updated_at")
+  updatedAt           DateTime  @default(now()) @updatedAt @map("updated_at")
 
   party               Party?    @relation(fields: [latestPartyId], references: [partyId])
   topics              PoliticianTopic[]
+  sections            PoliticianSection[]
+  regions             PoliticianRegion[]
+  departments         PoliticianDepartment[]
 
   @@map("politicians")
   @@index([latestPartyId])
 }
 
 model PoliticianTopic {
-  politicianId         Int                  @map("politician_id")
-  classificationItemId Int                  @map("classification_item_id")
-  createdAt            DateTime             @default(now()) @map("created_at")
+  politicianId         Int                @map("politician_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
 
-  politician           Politician           @relation(fields: [politicianId], references: [id], onDelete: Cascade)
-  classificationItem   ClassificationItem   @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+  politician           Politician         @relation(fields: [politicianId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
 
   @@id([politicianId, classificationItemId])
   @@map("politician_topics")
+}
+
+model PoliticianSection {
+  politicianId         Int                @map("politician_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politician           Politician         @relation(fields: [politicianId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicianId, classificationItemId])
+  @@map("politician_sections")
+}
+
+model PoliticianRegion {
+  politicianId         Int                @map("politician_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politician           Politician         @relation(fields: [politicianId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicianId, classificationItemId])
+  @@map("politician_regions")
+}
+
+model PoliticianDepartment {
+  politicianId         Int                @map("politician_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politician           Politician         @relation(fields: [politicianId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicianId, classificationItemId])
+  @@map("politician_departments")
+}
+
+model PoliticianNews {
+  id         Int      @id @default(autoincrement())
+  externalId Int      @unique @map("external_id")
+  action     String
+  summary    String
+  payload    Json
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  topics      PoliticianNewsTopic[]
+  sections    PoliticianNewsSection[]
+  regions     PoliticianNewsRegion[]
+  departments PoliticianNewsDepartment[]
+
+  @@map("politician_news")
+}
+
+model PoliticianNewsTopic {
+  politicianNewsId     Int                @map("politician_news_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politicianNews       PoliticianNews     @relation(fields: [politicianNewsId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicianNewsId, classificationItemId])
+  @@map("politician_news_topics")
+}
+
+model PoliticianNewsSection {
+  politicianNewsId     Int                @map("politician_news_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politicianNews       PoliticianNews     @relation(fields: [politicianNewsId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicianNewsId, classificationItemId])
+  @@map("politician_news_sections")
+}
+
+model PoliticianNewsRegion {
+  politicianNewsId     Int                @map("politician_news_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politicianNews       PoliticianNews     @relation(fields: [politicianNewsId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicianNewsId, classificationItemId])
+  @@map("politician_news_regions")
+}
+
+model PoliticianNewsDepartment {
+  politicianNewsId     Int                @map("politician_news_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politicianNews       PoliticianNews     @relation(fields: [politicianNewsId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicianNewsId, classificationItemId])
+  @@map("politician_news_departments")
+}
+
+model News {
+  id              Int      @id @default(autoincrement())
+  externalId      String   @unique @map("external_id")
+  title           String
+  description     String
+  summary         String
+  publicTimestamp String   @map("public_timestamp")
+  link            String?
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+
+  topics          NewsTopic[]
+  sections        NewsSection[]
+  regions         NewsRegion[]
+  departments     NewsDepartment[]
+
+  @@map("news")
+}
+
+model NewsTopic {
+  newsId               Int                @map("news_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  news                 News               @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, classificationItemId])
+  @@map("news_topics")
+}
+
+model NewsSection {
+  newsId               Int                @map("news_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  news                 News               @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, classificationItemId])
+  @@map("news_sections")
+}
+
+model NewsRegion {
+  newsId               Int                @map("news_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  news                 News               @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, classificationItemId])
+  @@map("news_regions")
+}
+
+model NewsDepartment {
+  newsId               Int                @map("news_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  news                 News               @relation(fields: [newsId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([newsId, classificationItemId])
+  @@map("news_departments")
 }
