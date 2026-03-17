@@ -1,6 +1,7 @@
 import { AxiosHttpClient } from '@common/http-client';
 import { WpApiModule } from '@common/wp-api/wp-api.module';
 import { ClassificationModule } from '@modules/classification/classification.module';
+import { PrismaModule } from '@modules/prisma/prisma.module';
 import { ApiService } from '@modules/news/service/api.service';
 import { NewsCron } from '@modules/news/service/news.cron.service';
 import { NewsService } from '@modules/news/service/news.service';
@@ -20,7 +21,7 @@ import { NewsController } from './news.controller';
     },
     AxiosHttpClient,
   ],
-  imports: [ClassificationModule, WpApiModule],
+  imports: [ClassificationModule, WpApiModule, PrismaModule],
   controllers: [NewsController],
 })
 export class NewsModule {}
