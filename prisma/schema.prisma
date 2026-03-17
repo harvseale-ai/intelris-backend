@@ -45,7 +45,7 @@ model ClassificationItem {
   title       String
   description String
   createdAt   DateTime           @default(now())
-  updatedAt   DateTime           @updatedAt
+  updatedAt   DateTime           @default(now()) @updatedAt
 
   politicianTopics PoliticianTopic[]
 
