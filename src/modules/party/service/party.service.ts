@@ -18,21 +18,35 @@ export class PartyService {
   ) {}
 
   async syncParties(): Promise<CreatePartyDto[]> {
-    try {
-      const partiesFromApi = await this.apiService.getParties();
-      const parties = await this.prepareParties(partiesFromApi);
+  try {
+    const partiesFromApi = await this.apiService.getParties();
+    const parties = await this.prepareParties(partiesFromApi);
 
-      await this.prisma.party.createMany({
-        data: parties,
-        skipDuplicates: true,
+    for (const party of parties) {
+      await this.prisma.party.upsert({
+        where: { partyId: party.partyId },
+        update: {
+          name: party.name,
+          isCommons: party.isCommons,
+          isLords: party.isLords,
+          isIndependent: party.isIndependent,
+        },
+        create: {
+          partyId: party.partyId,
+          name: party.name,
+          isCommons: party.isCommons,
+          isLords: party.isLords,
+          isIndependent: party.isIndependent,
+        },
       });
-
-      return parties;
-    } catch (error) {
-      this.logger.error('Error syncing parties', error);
-      throw new Error('Failed to sync parties');
     }
+
+    return parties;
+  } catch (error) {
+    this.logger.error('Error syncing parties', error);
+    throw new Error('Failed to sync parties');
   }
+}
 
   async findByHouse(house: House): Promise<number[]> {
     try {
