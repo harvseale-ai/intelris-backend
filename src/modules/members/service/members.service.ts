@@ -4,6 +4,7 @@ import * as fs from 'fs';
 
 import { WpApiService } from '@common/wp-api/wp-api.service';
 import { PrismaService } from '@modules/prisma/prisma.service';
+import { ClassificationType } from '@prisma/client';
 import { MembersProgress } from '../types/external-member.types';
 import { MembersApiService } from './members-api.service';
 
@@ -136,7 +137,7 @@ export class MembersService {
       if (item.topicIds?.length) {
         const topics = await this.prisma.classificationItem.findMany({
           where: {
-            type: 'TOPIC',
+            type: ClassificationType.TOPIC,
             externalId: { in: item.topicIds },
           },
         });
