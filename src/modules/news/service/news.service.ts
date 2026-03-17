@@ -5,21 +5,27 @@ import { CreateNewsDto } from '@modules/news/dto/req/create-news.dto';
 import { ApiService } from '@modules/news/service/api.service';
 import { GovUkResultItem } from '@modules/news/types/news.type';
 import { OpenAIService } from '@modules/openai/openai.service';
+import { PrismaService } from '@modules/prisma/prisma.service';
 import { Injectable, Logger } from '@nestjs/common';
+import { ClassificationType } from '@prisma/client';
 
 @Injectable()
 export class NewsService {
   private readonly logger = new Logger(NewsService.name);
+
   constructor(
     private apiService: ApiService,
     private openAIService: OpenAIService,
     private classificationService: ClassificationService,
+    private prisma: PrismaService,
   ) {}
 
   async syncNews(): Promise<CreateNewsDto[]> {
     try {
       const newsFromApi = await this.apiService.getGovUkNewsLast12h();
       const news: CreateNewsDto[] = await this.prepareNews(newsFromApi);
+
+      await this.saveNewsToNeon(news);
 
       return news;
     } catch (error) {
@@ -95,5 +101,124 @@ export class NewsService {
         summary: '',
       };
     }
+  }
+
+  private async saveNewsToNeon(items: CreateNewsDto[]): Promise<void> {
+    this.logger.log(`Saving ${items.length} news items to Neon...`);
+
+    for (const item of items) {
+      const news = await this.prisma.news.upsert({
+        where: { externalId: item.newsId },
+        update: {
+          title: item.title,
+          description: item.description,
+          summary: item.summary,
+          publicTimestamp: item.public_timestamp,
+          link: item.link || null,
+        },
+        create: {
+          externalId: item.newsId,
+          title: item.title,
+          description: item.description,
+          summary: item.summary,
+          publicTimestamp: item.public_timestamp,
+          link: item.link || null,
+        },
+      });
+
+      await this.prisma.newsTopic.deleteMany({
+        where: { newsId: news.id },
+      });
+
+      await this.prisma.newsSection.deleteMany({
+        where: { newsId: news.id },
+      });
+
+      await this.prisma.newsRegion.deleteMany({
+        where: { newsId: news.id },
+      });
+
+      await this.prisma.newsDepartment.deleteMany({
+        where: { newsId: news.id },
+      });
+
+      if (item.topicIds?.length) {
+        const topics = await this.prisma.classificationItem.findMany({
+          where: {
+            type: ClassificationType.TOPIC,
+            externalId: { in: item.topicIds },
+          },
+        });
+
+        if (topics.length) {
+          await this.prisma.newsTopic.createMany({
+            data: topics.map((topic) => ({
+              newsId: news.id,
+              classificationItemId: topic.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      if (item.sectorIds?.length) {
+        const sections = await this.prisma.classificationItem.findMany({
+          where: {
+            type: ClassificationType.SECTION,
+            externalId: { in: item.sectorIds },
+          },
+        });
+
+        if (sections.length) {
+          await this.prisma.newsSection.createMany({
+            data: sections.map((section) => ({
+              newsId: news.id,
+              classificationItemId: section.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      if (item.regionIds?.length) {
+        const regions = await this.prisma.classificationItem.findMany({
+          where: {
+            type: ClassificationType.REGION,
+            externalId: { in: item.regionIds },
+          },
+        });
+
+        if (regions.length) {
+          await this.prisma.newsRegion.createMany({
+            data: regions.map((region) => ({
+              newsId: news.id,
+              classificationItemId: region.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      if (item.departmentIds?.length) {
+        const departments = await this.prisma.classificationItem.findMany({
+          where: {
+            type: ClassificationType.DEPARTMENT,
+            externalId: { in: item.departmentIds },
+          },
+        });
+
+        if (departments.length) {
+          await this.prisma.newsDepartment.createMany({
+            data: departments.map((department) => ({
+              newsId: news.id,
+              classificationItemId: department.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+    }
+
+    this.logger.log(`Finished saving news to Neon.`);
   }
 }
