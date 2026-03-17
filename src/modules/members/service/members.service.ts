@@ -98,61 +98,71 @@ export class MembersService {
   private async saveMembersToNeon(items: any[]): Promise<void> {
     this.logger.log(`Saving ${items.length} members to Neon...`);
 
-    for (const item of items) {
-      const politician = await this.prisma.politician.upsert({
-        where: { politicianId: item.politicianId },
-        update: {
-          nameDisplayAs: item.nameDisplayAs,
-          nameFullTitle: item.nameFullTitle,
-          gender: item.gender ?? null,
-          membershipFromId: item.membershipFromId ?? null,
-          membershipFrom: item.membershipFrom ?? null,
-          houseId: item.houseId ?? null,
-          membershipStartDate: item.membershipStartDate
-            ? new Date(item.membershipStartDate)
-            : null,
-          latestPartyId: item.latestPartyId ?? null,
-          thumbnailUrl: item.thumbnailUrl ?? null,
-        },
-        create: {
-          politicianId: item.politicianId,
-          nameDisplayAs: item.nameDisplayAs,
-          nameFullTitle: item.nameFullTitle,
-          gender: item.gender ?? null,
-          membershipFromId: item.membershipFromId ?? null,
-          membershipFrom: item.membershipFrom ?? null,
-          houseId: item.houseId ?? null,
-          membershipStartDate: item.membershipStartDate
-            ? new Date(item.membershipStartDate)
-            : null,
-          latestPartyId: item.latestPartyId ?? null,
-          thumbnailUrl: item.thumbnailUrl ?? null,
-        },
+for (const item of items) {
+  const existingParty =
+    item.latestPartyId != null
+      ? await this.prisma.party.findUnique({
+          where: { partyId: item.latestPartyId },
+          select: { partyId: true },
+        })
+      : null;
+
+  const safeLatestPartyId = existingParty?.partyId ?? null;
+
+  const politician = await this.prisma.politician.upsert({
+    where: { politicianId: item.politicianId },
+    update: {
+      nameDisplayAs: item.nameDisplayAs,
+      nameFullTitle: item.nameFullTitle,
+      gender: item.gender ?? null,
+      membershipFromId: item.membershipFromId ?? null,
+      membershipFrom: item.membershipFrom ?? null,
+      houseId: item.houseId ?? null,
+      membershipStartDate: item.membershipStartDate
+        ? new Date(item.membershipStartDate)
+        : null,
+      latestPartyId: safeLatestPartyId,
+      thumbnailUrl: item.thumbnailUrl ?? null,
+    },
+    create: {
+      politicianId: item.politicianId,
+      nameDisplayAs: item.nameDisplayAs,
+      nameFullTitle: item.nameFullTitle,
+      gender: item.gender ?? null,
+      membershipFromId: item.membershipFromId ?? null,
+      membershipFrom: item.membershipFrom ?? null,
+      houseId: item.houseId ?? null,
+      membershipStartDate: item.membershipStartDate
+        ? new Date(item.membershipStartDate)
+        : null,
+      latestPartyId: safeLatestPartyId,
+      thumbnailUrl: item.thumbnailUrl ?? null,
+    },
+  });
+
+  await this.prisma.politicianTopic.deleteMany({
+    where: { politicianId: politician.id },
+  });
+
+  if (item.topicIds?.length) {
+    const topics = await this.prisma.classificationItem.findMany({
+      where: {
+        type: ClassificationType.TOPIC,
+        externalId: { in: item.topicIds },
+      },
+    });
+
+    if (topics.length) {
+      await this.prisma.politicianTopic.createMany({
+        data: topics.map((topic) => ({
+          politicianId: politician.id,
+          classificationItemId: topic.id,
+        })),
+        skipDuplicates: true,
       });
-
-      await this.prisma.politicianTopic.deleteMany({
-        where: { politicianId: politician.id },
-      });
-
-      if (item.topicIds?.length) {
-        const topics = await this.prisma.classificationItem.findMany({
-          where: {
-            type: ClassificationType.TOPIC,
-            externalId: { in: item.topicIds },
-          },
-        });
-
-        if (topics.length) {
-          await this.prisma.politicianTopic.createMany({
-            data: topics.map((topic) => ({
-              politicianId: politician.id,
-              classificationItemId: topic.id,
-            })),
-            skipDuplicates: true,
-          });
-        }
-      }
     }
+  }
+}
 
     this.logger.log(`Finished saving members to Neon.`);
   }
