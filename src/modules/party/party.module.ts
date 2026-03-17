@@ -1,11 +1,15 @@
-import { AxiosHttpClient } from '@common/http-client';
-import { ApiService } from '@modules/party/service/api.service';
-import { PartiesCron } from '@modules/party/service/party.cron.service';
-import { PartyService } from '@modules/party/service/party.service';
 import { Module } from '@nestjs/common';
 
+import { AxiosHttpClient } from '@common/http-client';
+import { PrismaModule } from '@modules/prisma/prisma.module';
+import { PartyController } from './party.controller';
+import { ApiService } from './service/api.service';
+import { PartiesCron } from './service/party.cron.service';
+import { PartyService } from './service/party.service';
+
 @Module({
-  controllers: [],
+  imports: [PrismaModule],
+  controllers: [PartyController],
   providers: [
     ApiService,
     PartiesCron,
