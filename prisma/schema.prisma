@@ -24,6 +24,10 @@ model Party {
   isIndependent Boolean  @default(false)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  politicians   Politician[]
+
+  @@map("parties")
 }
 
 enum ClassificationType {
@@ -40,7 +44,45 @@ model ClassificationItem {
   type        ClassificationType
   title       String
   description String
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  politicianTopics PoliticianTopic[]
 
   @@map("classification_items")
   @@index([type])
+}
+
+model Politician {
+  id                  Int       @id @default(autoincrement())
+  politicianId        Int       @unique @map("politician_id")
+  nameDisplayAs       String    @map("name_display_as")
+  nameFullTitle       String    @map("name_full_title")
+  gender              String?
+  membershipFromId    Int?      @map("membership_from_id")
+  membershipFrom      String?   @map("membership_from")
+  houseId             Int?      @map("house_id")
+  membershipStartDate DateTime? @map("membership_start_date")
+  latestPartyId       Int?      @map("latest_party_id")
+  thumbnailUrl        String?   @map("thumbnail_url")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  party               Party?    @relation(fields: [latestPartyId], references: [partyId])
+  topics              PoliticianTopic[]
+
+  @@map("politicians")
+  @@index([latestPartyId])
+}
+
+model PoliticianTopic {
+  politicianId         Int                  @map("politician_id")
+  classificationItemId Int                  @map("classification_item_id")
+  createdAt            DateTime             @default(now()) @map("created_at")
+
+  politician           Politician           @relation(fields: [politicianId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem   @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicianId, classificationItemId])
+  @@map("politician_topics")
 }
