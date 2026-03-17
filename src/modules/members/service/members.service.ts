@@ -3,6 +3,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 
 import { WpApiService } from '@common/wp-api/wp-api.service';
+import { PrismaService } from '@modules/prisma/prisma.service';
 import { MembersProgress } from '../types/external-member.types';
 import { MembersApiService } from './members-api.service';
 
@@ -13,6 +14,7 @@ export class MembersService {
   constructor(
     private readonly membersApiService: MembersApiService,
     private readonly wpApiService: WpApiService,
+    private readonly prisma: PrismaService,
   ) {}
 
   async getMembersForWP(): Promise<boolean> {
@@ -78,6 +80,8 @@ export class MembersService {
 
       this.logger.log(`All ${progress.items.length} members processed successfully`);
 
+      await this.saveMembersToNeon(progress.items);
+
       await this.wpApiService.post<void, { totalMembers: number; skip: number; items: any[] }>(
         'politicians/import',
         finalMembers,
@@ -88,6 +92,68 @@ export class MembersService {
       this.logger.error('Fatal error in fetchAllWithAI:', error);
       throw error;
     }
+  }
+
+  private async saveMembersToNeon(items: any[]): Promise<void> {
+    this.logger.log(`Saving ${items.length} members to Neon...`);
+
+    for (const item of items) {
+      const politician = await this.prisma.politician.upsert({
+        where: { politicianId: item.politicianId },
+        update: {
+          nameDisplayAs: item.nameDisplayAs,
+          nameFullTitle: item.nameFullTitle,
+          gender: item.gender ?? null,
+          membershipFromId: item.membershipFromId ?? null,
+          membershipFrom: item.membershipFrom ?? null,
+          houseId: item.houseId ?? null,
+          membershipStartDate: item.membershipStartDate
+            ? new Date(item.membershipStartDate)
+            : null,
+          latestPartyId: item.latestPartyId ?? null,
+          thumbnailUrl: item.thumbnailUrl ?? null,
+        },
+        create: {
+          politicianId: item.politicianId,
+          nameDisplayAs: item.nameDisplayAs,
+          nameFullTitle: item.nameFullTitle,
+          gender: item.gender ?? null,
+          membershipFromId: item.membershipFromId ?? null,
+          membershipFrom: item.membershipFrom ?? null,
+          houseId: item.houseId ?? null,
+          membershipStartDate: item.membershipStartDate
+            ? new Date(item.membershipStartDate)
+            : null,
+          latestPartyId: item.latestPartyId ?? null,
+          thumbnailUrl: item.thumbnailUrl ?? null,
+        },
+      });
+
+      await this.prisma.politicianTopic.deleteMany({
+        where: { politicianId: politician.id },
+      });
+
+      if (item.topicIds?.length) {
+        const topics = await this.prisma.classificationItem.findMany({
+          where: {
+            type: 'TOPIC',
+            externalId: { in: item.topicIds },
+          },
+        });
+
+        if (topics.length) {
+          await this.prisma.politicianTopic.createMany({
+            data: topics.map((topic) => ({
+              politicianId: politician.id,
+              classificationItemId: topic.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+    }
+
+    this.logger.log(`Finished saving members to Neon.`);
   }
 
   private loadProgress(): any {
