@@ -57,6 +57,11 @@ model ClassificationItem {
   politicianNewsRegions      PoliticianNewsRegion[]
   politicianNewsDepartments  PoliticianNewsDepartment[]
 
+  politicalEventTopics       PoliticalEventTopic[]
+  politicalEventSections     PoliticalEventSection[]
+  politicalEventRegions      PoliticalEventRegion[]
+  politicalEventDepartments  PoliticalEventDepartment[]
+
   newsTopics       NewsTopic[]
   newsSections     NewsSection[]
   newsRegions      NewsRegion[]
@@ -86,6 +91,7 @@ model Politician {
   sections            PoliticianSection[]
   regions             PoliticianRegion[]
   departments         PoliticianDepartment[]
+  politicalEvents     PoliticalEvent[]
 
   @@map("politicians")
   @@index([latestPartyId])
@@ -269,4 +275,88 @@ model NewsDepartment {
 
   @@id([newsId, classificationItemId])
   @@map("news_departments")
+}
+
+enum PoliticalEventType {
+  ORAL_QUESTION
+  WRITTEN_QUESTION
+  WRITTEN_STATEMENT
+  EARLY_DAY_MOTION
+}
+
+model PoliticalEvent {
+  id               Int                @id @default(autoincrement())
+  externalId       String             @map("external_id")
+  eventType        PoliticalEventType @map("event_type")
+  politicianId     Int?               @map("politician_id")
+  title            String?
+  summary          String?
+  description      String?
+  eventDate        DateTime?          @map("event_date")
+  house            String?
+  sourceSystem     String?            @map("source_system")
+  payload          Json
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @default(now()) @updatedAt @map("updated_at")
+
+  politician       Politician?        @relation(fields: [politicianId], references: [id], onDelete: SetNull)
+
+  topics           PoliticalEventTopic[]
+  sections         PoliticalEventSection[]
+  regions          PoliticalEventRegion[]
+  departments      PoliticalEventDepartment[]
+
+  @@unique([externalId, eventType])
+  @@map("political_events")
+  @@index([politicianId])
+  @@index([eventType])
+  @@index([eventDate])
+}
+
+model PoliticalEventTopic {
+  politicalEventId     Int                @map("political_event_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politicalEvent       PoliticalEvent     @relation(fields: [politicalEventId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicalEventId, classificationItemId])
+  @@map("political_event_topics")
+}
+
+model PoliticalEventSection {
+  politicalEventId     Int                @map("political_event_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politicalEvent       PoliticalEvent     @relation(fields: [politicalEventId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicalEventId, classificationItemId])
+  @@map("political_event_sections")
+}
+
+model PoliticalEventRegion {
+  politicalEventId     Int                @map("political_event_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politicalEvent       PoliticalEvent     @relation(fields: [politicalEventId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicalEventId, classificationItemId])
+  @@map("political_event_regions")
+}
+
+model PoliticalEventDepartment {
+  politicalEventId     Int                @map("political_event_id")
+  classificationItemId Int                @map("classification_item_id")
+  createdAt            DateTime           @default(now()) @map("created_at")
+
+  politicalEvent       PoliticalEvent     @relation(fields: [politicalEventId], references: [id], onDelete: Cascade)
+  classificationItem   ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
+
+  @@id([politicalEventId, classificationItemId])
+  @@map("political_event_departments")
 }
