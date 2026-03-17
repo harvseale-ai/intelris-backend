@@ -45,8 +45,6 @@ export class MembersService {
 
       this.logger.log(`Total members: ${totalMembers}, Total pages: ${totalPages}`);
 
-      const MAX_TEST_PAGES = 1; // 1 page = 15 members
-
       for (let page = progress.lastProcessedPage; page < totalPages; page++) {
         try {
           this.logger.log(`Processing page ${page + 1}/${totalPages}...`);
