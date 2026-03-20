@@ -15,27 +15,16 @@ enum ClassificationType {
   DEPARTMENT
 }
 
-enum PoliticalEventType {
-  ORAL_QUESTION
-  WRITTEN_QUESTION
-  WRITTEN_STATEMENT
-  EARLY_DAY_MOTION
-}
-
 enum EntityType {
   PERSON
-  POLITICIAN
   ORGANISATION
   COMMITTEE
   PARTY
   BILL
   EVENT
-  PUBLICATION
   NEWS
+  PUBLICATION
   PETITION
-  DEPARTMENT
-  REGION
-  TOPIC
   OTHER
 }
 
@@ -64,6 +53,17 @@ enum SourceMethod {
   API
 }
 
+enum PoliticalEventType {
+  ORAL_QUESTION
+  WRITTEN_QUESTION
+  WRITTEN_STATEMENT
+  EARLY_DAY_MOTION
+  COMMITTEE_HEARING
+  DEBATE
+  MEETING
+  OTHER
+}
+
 model Assistant {
   id          String   @id @default(uuid())
   assistantId String   @unique @map("assistant_id")
@@ -74,460 +74,32 @@ model Assistant {
   @@map("assistants")
 }
 
-model Party {
-  id            Int      @id @default(autoincrement())
-  partyId       Int      @unique @map("party_id")
-  name          String   @map("name")
-  slug          String?  @unique
-  shortName     String?  @map("short_name")
-  displayName   String?  @map("display_name")
-  colourHex     String?  @map("colour_hex")
-  houseScope    String?  @map("house_scope")
-  isActive      Boolean  @default(true) @map("is_active")
-  isCommons     Boolean  @default(false) @map("is_commons")
-  isLords       Boolean  @default(false) @map("is_lords")
-  isIndependent Boolean  @default(false) @map("is_independent")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
-
-  politicians          Politician[]
-  politicianMemberships PoliticianPartyMembership[]
-
-  @@map("parties")
-}
-
 model ClassificationItem {
-  id           Int                @id @default(autoincrement())
-  externalId   Int                @unique @map("external_id")
-  type         ClassificationType
-  slug         String?            @unique
-  title        String
-  description  String
-  includesText String?            @map("includes_text")
-  signalsText  String?            @map("signals_text")
-  excludesText String?            @map("excludes_text")
-  isActive     Boolean            @default(true) @map("is_active")
-  sortOrder    Int?               @map("sort_order")
-  monitorWeight Float?            @map("monitor_weight")
-  parentId     Int?               @map("parent_id")
-  createdAt    DateTime           @default(now()) @map("created_at")
-  updatedAt    DateTime           @default(now()) @updatedAt @map("updated_at")
+  id            Int                 @id @default(autoincrement())
+  externalId    Int?                @unique @map("external_id")
+  type          ClassificationType
+  slug          String?             @unique
+  title         String
+  description   String?
+  includesText  String?             @map("includes_text")
+  signalsText   String?             @map("signals_text")
+  excludesText  String?             @map("excludes_text")
+  isActive      Boolean             @default(true) @map("is_active")
+  sortOrder     Int?                @map("sort_order")
+  monitorWeight Float?              @map("monitor_weight")
+  parentId      Int?                @map("parent_id")
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
 
-  parent   ClassificationItem?  @relation("ClassificationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children ClassificationItem[] @relation("ClassificationHierarchy")
-
-  politicianTopics       PoliticianTopic[]
-  politicianSections     PoliticianSection[]
-  politicianRegions      PoliticianRegion[]
-  politicianDepartments  PoliticianDepartment[]
-
-  politicianNewsTopics       PoliticianNewsTopic[]
-  politicianNewsSections     PoliticianNewsSection[]
-  politicianNewsRegions      PoliticianNewsRegion[]
-  politicianNewsDepartments  PoliticianNewsDepartment[]
-
-  politicalEventTopics       PoliticalEventTopic[]
-  politicalEventSections     PoliticalEventSection[]
-  politicalEventRegions      PoliticalEventRegion[]
-  politicalEventDepartments  PoliticalEventDepartment[]
-
-  newsTopics      NewsTopic[]
-  newsSections    NewsSection[]
-  newsRegions     NewsRegion[]
-  newsDepartments NewsDepartment[]
-
-  entityClassifications       EntityClassification[]
+  parent                    ClassificationItem?         @relation("ClassificationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children                  ClassificationItem[]        @relation("ClassificationHierarchy")
+  entityClassifications     EntityClassification[]
   relationshipClassifications RelationshipClassification[]
 
   @@map("classification_items")
   @@index([type])
   @@index([isActive])
   @@index([parentId])
-}
-
-model Politician {
-  id                   Int      @id @default(autoincrement())
-  politicianId         Int      @unique @map("politician_id")
-  nameDisplayAs        String   @map("name_display_as")
-  nameFullTitle        String   @map("name_full_title")
-  slug                 String?  @unique
-  gender               String?
-  membershipFromId     Int?     @map("membership_from_id")
-  membershipFrom       String?  @map("membership_from")
-  houseId              Int?     @map("house_id")
-  membershipStartDate  DateTime? @map("membership_start_date")
-  latestPartyId        Int?     @map("latest_party_id")
-  thumbnailUrl         String?  @map("thumbnail_url")
-  status               String?
-  isCurrent            Boolean  @default(true) @map("is_current")
-  biography            String?
-  currentRoleTitle     String?  @map("current_role_title")
-  influenceScore       Float?   @map("influence_score")
-  visibilityScore      Float?   @map("visibility_score")
-  monitorWeight        Float?   @map("monitor_weight")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @default(now()) @updatedAt @map("updated_at")
-
-  party            Party?                  @relation(fields: [latestPartyId], references: [partyId])
-  topics           PoliticianTopic[]
-  sections         PoliticianSection[]
-  regions          PoliticianRegion[]
-  departments      PoliticianDepartment[]
-  politicalEvents  PoliticalEvent[]
-
-  @@map("politicians")
-  @@index([latestPartyId])
-  @@index([isCurrent])
-  @@index([status])
-}
-
-model PoliticianTopic {
-  politicianId         Int      @map("politician_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politician         Politician         @relation(fields: [politicianId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicianId, classificationItemId])
-  @@map("politician_topics")
-}
-
-model PoliticianSection {
-  politicianId         Int      @map("politician_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politician         Politician         @relation(fields: [politicianId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicianId, classificationItemId])
-  @@map("politician_sections")
-}
-
-model PoliticianRegion {
-  politicianId         Int      @map("politician_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politician         Politician         @relation(fields: [politicianId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicianId, classificationItemId])
-  @@map("politician_regions")
-}
-
-model PoliticianDepartment {
-  politicianId         Int      @map("politician_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politician         Politician         @relation(fields: [politicianId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicianId, classificationItemId])
-  @@map("politician_departments")
-}
-
-model PoliticianNews {
-  id                 Int             @id @default(autoincrement())
-  externalId         Int             @unique @map("external_id")
-  action             String
-  summary            String
-  payload            Json
-  sourceSystem       String?         @map("source_system")
-  sourceUrl          String?         @map("source_url")
-  sourceExternalId   String?         @map("source_external_id")
-  fetchedAt          DateTime?       @map("fetched_at")
-  firstSeenAt        DateTime?       @map("first_seen_at")
-  lastSeenAt         DateTime?       @map("last_seen_at")
-  lastProcessedAt    DateTime?       @map("last_processed_at")
-  relevanceScore     Float?          @map("relevance_score")
-  priorityScore      Float?          @map("priority_score")
-  signalScore        Float?          @map("signal_score")
-  impactScore        Float?          @map("impact_score")
-  monitorMatchScore  Float?          @map("monitor_match_score")
-  confidenceScore    Float?          @map("confidence_score")
-  importanceLabel    ImportanceLabel? @map("importance_label")
-  isKeyUpdate        Boolean         @default(false) @map("is_key_update")
-  whyRelevant        String?         @map("why_relevant")
-  briefSummary       String?         @map("brief_summary")
-  clientImpactSummary String?        @map("client_impact_summary")
-  changeType         ChangeType?     @map("change_type")
-  changeSummary      String?         @map("change_summary")
-  contentHash        String?         @map("content_hash")
-  changeHash         String?         @map("change_hash")
-  createdAt          DateTime        @default(now()) @map("created_at")
-  updatedAt          DateTime        @default(now()) @updatedAt @map("updated_at")
-
-  topics      PoliticianNewsTopic[]
-  sections    PoliticianNewsSection[]
-  regions     PoliticianNewsRegion[]
-  departments PoliticianNewsDepartment[]
-
-  @@map("politician_news")
-  @@index([sourceSystem])
-  @@index([firstSeenAt])
-  @@index([lastSeenAt])
-  @@index([relevanceScore])
-  @@index([priorityScore])
-  @@index([monitorMatchScore])
-  @@index([importanceLabel])
-  @@index([changeType])
-  @@index([isKeyUpdate])
-}
-
-model PoliticianNewsTopic {
-  politicianNewsId     Int      @map("politician_news_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politicianNews     PoliticianNews     @relation(fields: [politicianNewsId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicianNewsId, classificationItemId])
-  @@map("politician_news_topics")
-}
-
-model PoliticianNewsSection {
-  politicianNewsId     Int      @map("politician_news_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politicianNews     PoliticianNews     @relation(fields: [politicianNewsId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicianNewsId, classificationItemId])
-  @@map("politician_news_sections")
-}
-
-model PoliticianNewsRegion {
-  politicianNewsId     Int      @map("politician_news_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politicianNews     PoliticianNews     @relation(fields: [politicianNewsId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicianNewsId, classificationItemId])
-  @@map("politician_news_regions")
-}
-
-model PoliticianNewsDepartment {
-  politicianNewsId     Int      @map("politician_news_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politicianNews     PoliticianNews     @relation(fields: [politicianNewsId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicianNewsId, classificationItemId])
-  @@map("politician_news_departments")
-}
-
-model News {
-  id                  Int             @id @default(autoincrement())
-  externalId          String          @unique @map("external_id")
-  title               String
-  description         String
-  summary             String
-  publicTimestamp     String          @map("public_timestamp")
-  link                String?
-  publishedAt         DateTime?       @map("published_at")
-  sourceSystem        String?         @map("source_system")
-  sourceUrl           String?         @map("source_url")
-  sourceExternalId    String?         @map("source_external_id")
-  fetchedAt           DateTime?       @map("fetched_at")
-  firstSeenAt         DateTime?       @map("first_seen_at")
-  lastSeenAt          DateTime?       @map("last_seen_at")
-  lastProcessedAt     DateTime?       @map("last_processed_at")
-  relevanceScore      Float?          @map("relevance_score")
-  priorityScore       Float?          @map("priority_score")
-  signalScore         Float?          @map("signal_score")
-  impactScore         Float?          @map("impact_score")
-  monitorMatchScore   Float?          @map("monitor_match_score")
-  confidenceScore     Float?          @map("confidence_score")
-  importanceLabel     ImportanceLabel? @map("importance_label")
-  isKeyUpdate         Boolean         @default(false) @map("is_key_update")
-  whyRelevant         String?         @map("why_relevant")
-  briefSummary        String?         @map("brief_summary")
-  clientImpactSummary String?         @map("client_impact_summary")
-  changeType          ChangeType?     @map("change_type")
-  changeSummary       String?         @map("change_summary")
-  contentHash         String?         @map("content_hash")
-  changeHash          String?         @map("change_hash")
-  createdAt           DateTime        @default(now()) @map("created_at")
-  updatedAt           DateTime        @default(now()) @updatedAt @map("updated_at")
-
-  topics      NewsTopic[]
-  sections    NewsSection[]
-  regions     NewsRegion[]
-  departments NewsDepartment[]
-
-  @@map("news")
-  @@index([publishedAt])
-  @@index([sourceSystem])
-  @@index([firstSeenAt])
-  @@index([lastSeenAt])
-  @@index([relevanceScore])
-  @@index([priorityScore])
-  @@index([monitorMatchScore])
-  @@index([importanceLabel])
-  @@index([changeType])
-  @@index([isKeyUpdate])
-}
-
-model NewsTopic {
-  newsId               Int      @map("news_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  news               News               @relation(fields: [newsId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([newsId, classificationItemId])
-  @@map("news_topics")
-}
-
-model NewsSection {
-  newsId               Int      @map("news_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  news               News               @relation(fields: [newsId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([newsId, classificationItemId])
-  @@map("news_sections")
-}
-
-model NewsRegion {
-  newsId               Int      @map("news_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  news               News               @relation(fields: [newsId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([newsId, classificationItemId])
-  @@map("news_regions")
-}
-
-model NewsDepartment {
-  newsId               Int      @map("news_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  news               News               @relation(fields: [newsId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([newsId, classificationItemId])
-  @@map("news_departments")
-}
-
-model PoliticalEvent {
-  id                  Int              @id @default(autoincrement())
-  externalId          String           @map("external_id")
-  eventType           PoliticalEventType @map("event_type")
-  politicianId        Int?             @map("politician_id")
-  title               String?
-  summary             String?
-  description         String?
-  eventDate           DateTime?        @map("event_date")
-  house               String?
-  sourceSystem        String?          @map("source_system")
-  sourceUrl           String?          @map("source_url")
-  sourceExternalId    String?          @map("source_external_id")
-  fetchedAt           DateTime?        @map("fetched_at")
-  firstSeenAt         DateTime?        @map("first_seen_at")
-  lastSeenAt          DateTime?        @map("last_seen_at")
-  lastProcessedAt     DateTime?        @map("last_processed_at")
-  relevanceScore      Float?           @map("relevance_score")
-  priorityScore       Float?           @map("priority_score")
-  signalScore         Float?           @map("signal_score")
-  impactScore         Float?           @map("impact_score")
-  monitorMatchScore   Float?           @map("monitor_match_score")
-  confidenceScore     Float?           @map("confidence_score")
-  importanceLabel     ImportanceLabel? @map("importance_label")
-  isKeyUpdate         Boolean          @default(false) @map("is_key_update")
-  whyRelevant         String?          @map("why_relevant")
-  briefSummary        String?          @map("brief_summary")
-  clientImpactSummary String?          @map("client_impact_summary")
-  changeType          ChangeType?      @map("change_type")
-  changeSummary       String?          @map("change_summary")
-  contentHash         String?          @map("content_hash")
-  changeHash          String?          @map("change_hash")
-  payload             Json
-  createdAt           DateTime         @default(now()) @map("created_at")
-  updatedAt           DateTime         @default(now()) @updatedAt @map("updated_at")
-
-  politician  Politician? @relation(fields: [politicianId], references: [id], onDelete: SetNull)
-
-  topics      PoliticalEventTopic[]
-  sections    PoliticalEventSection[]
-  regions     PoliticalEventRegion[]
-  departments PoliticalEventDepartment[]
-
-  @@unique([externalId, eventType])
-  @@map("political_events")
-  @@index([politicianId])
-  @@index([eventType])
-  @@index([eventDate])
-  @@index([sourceSystem])
-  @@index([relevanceScore])
-  @@index([priorityScore])
-  @@index([monitorMatchScore])
-  @@index([importanceLabel])
-  @@index([changeType])
-  @@index([isKeyUpdate])
-}
-
-model PoliticalEventTopic {
-  politicalEventId     Int      @map("political_event_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politicalEvent     PoliticalEvent     @relation(fields: [politicalEventId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicalEventId, classificationItemId])
-  @@map("political_event_topics")
-}
-
-model PoliticalEventSection {
-  politicalEventId     Int      @map("political_event_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politicalEvent     PoliticalEvent     @relation(fields: [politicalEventId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicalEventId, classificationItemId])
-  @@map("political_event_sections")
-}
-
-model PoliticalEventRegion {
-  politicalEventId     Int      @map("political_event_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politicalEvent     PoliticalEvent     @relation(fields: [politicalEventId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicalEventId, classificationItemId])
-  @@map("political_event_regions")
-}
-
-model PoliticalEventDepartment {
-  politicalEventId     Int      @map("political_event_id")
-  classificationItemId Int      @map("classification_item_id")
-  createdAt            DateTime @default(now()) @map("created_at")
-
-  politicalEvent     PoliticalEvent     @relation(fields: [politicalEventId], references: [id], onDelete: Cascade)
-  classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
-
-  @@id([politicalEventId, classificationItemId])
-  @@map("political_event_departments")
 }
 
 model OrganisationType {
@@ -578,16 +150,16 @@ model BillStageType {
 }
 
 model RelationshipType {
-  id                Int      @id @default(autoincrement())
-  code              String   @unique
+  id                Int        @id @default(autoincrement())
+  code              String     @unique
   label             String
-  inverseLabel      String?  @map("inverse_label")
+  inverseLabel      String?    @map("inverse_label")
   subjectEntityType EntityType? @map("subject_entity_type")
   objectEntityType  EntityType? @map("object_entity_type")
-  isDirectional     Boolean  @default(true) @map("is_directional")
-  isActive          Boolean  @default(true) @map("is_active")
-  createdAt         DateTime @default(now()) @map("created_at")
-  updatedAt         DateTime @updatedAt @map("updated_at")
+  isDirectional     Boolean    @default(true) @map("is_directional")
+  isActive          Boolean    @default(true) @map("is_active")
+  createdAt         DateTime   @default(now()) @map("created_at")
+  updatedAt         DateTime   @updatedAt @map("updated_at")
 
   entityRelationships EntityRelationship[]
 
@@ -609,25 +181,25 @@ model Entity {
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")
 
-  person             Person?
-  organisation       Organisation?
-  committee          Committee?
-  bill               Bill?
-  event              Event?
-  publication        Publication?
-  petition           Petition?
+  person        Person?
+  politician    PoliticianProfile?
+  organisation  Organisation?
+  committee     Committee?
+  party         Party?
+  bill          Bill?
+  event         Event?
+  news          News?
+  publication   Publication?
+  petition      Petition?
 
   subjectRelationships EntityRelationship[] @relation("EntityRelationshipSubject")
   objectRelationships  EntityRelationship[] @relation("EntityRelationshipObject")
 
-  subjectRelationshipEvidence EntityRelationship[] @relation("EntityRelationshipSubject")
-  objectRelationshipEvidence  EntityRelationship[] @relation("EntityRelationshipObject")
-
-  aliases             EntityAlias[]
-  externalMappings    ExternalMapping[]
-  classifications     EntityClassification[]
-  mentions            EntityMention[]
-  statusHistory       EntityStatusHistory[]
+  aliases          EntityAlias[]
+  externalMappings ExternalMapping[]
+  classifications  EntityClassification[]
+  mentions         EntityMention[]
+  statusHistory    EntityStatusHistory[]
 
   @@map("entities")
   @@index([entityType])
@@ -637,54 +209,85 @@ model Entity {
   @@index([isActive])
 }
 
-model Person {
-  id           Int      @id @default(autoincrement())
-  entityId     Int      @unique @map("entity_id")
-  externalId   String?  @unique @map("external_id")
-  fullName     String   @map("full_name")
-  firstName    String?  @map("first_name")
-  lastName     String?  @map("last_name")
-  honorific    String?
-  gender       String?
-  dateOfBirth  DateTime? @map("date_of_birth")
-  bio          String?
-  thumbnailUrl String?  @map("thumbnail_url")
-  isPolitician Boolean  @default(false) @map("is_politician")
-  sourceSystem String?  @map("source_system")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+model Party {
+  id            Int      @id @default(autoincrement())
+  entityId      Int      @unique @map("entity_id")
+  partyId       Int?     @unique @map("party_id")
+  name          String   @map("name")
+  slug          String?  @unique
+  shortName     String?  @map("short_name")
+  displayName   String?  @map("display_name")
+  colourHex     String?  @map("colour_hex")
+  houseScope    String?  @map("house_scope")
+  isActive      Boolean  @default(true) @map("is_active")
+  isCommons     Boolean  @default(false) @map("is_commons")
+  isLords       Boolean  @default(false) @map("is_lords")
+  isIndependent Boolean  @default(false) @map("is_independent")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  entity                Entity                     @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  politicianProfile     PoliticianProfile?
-  organisationRoles     PersonOrganisationRole[]
-  committeeRoles        PoliticianCommitteeRole[]
-  billRelationships     BillPersonRelationship[]
+  entity                Entity                      @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  politicianProfiles    PoliticianProfile[]
+  politicianMemberships PoliticianPartyMembership[]
+
+  @@map("parties")
+  @@index([isActive])
+}
+
+model Person {
+  id            Int       @id @default(autoincrement())
+  entityId      Int       @unique @map("entity_id")
+  externalId    String?   @unique @map("external_id")
+  fullName      String    @map("full_name")
+  firstName     String?   @map("first_name")
+  lastName      String?   @map("last_name")
+  honorific     String?
+  gender        String?
+  dateOfBirth   DateTime? @map("date_of_birth")
+  bio           String?
+  thumbnailUrl  String?   @map("thumbnail_url")
+  sourceSystem  String?   @map("source_system")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  entity               Entity                    @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  politicianProfile    PoliticianProfile?
+  organisationRoles    PersonOrganisationRole[]
+  committeeRoles       PoliticianCommitteeRole[]
+  billRelationships    BillPersonRelationship[]
 
   @@map("people")
   @@index([fullName])
   @@index([sourceSystem])
-  @@index([isPolitician])
 }
 
 model PoliticianProfile {
-  id                    Int      @id @default(autoincrement())
-  personId              Int      @unique @map("person_id")
-  politicianExternalId  Int?     @unique @map("politician_external_id")
-  house                 String?
-  membershipFrom        String?  @map("membership_from")
-  membershipFromId      Int?     @map("membership_from_id")
-  membershipStartDate   DateTime? @map("membership_start_date")
-  currentPartyId        Int?     @map("current_party_id")
-  currentConstituency   String?  @map("current_constituency")
-  parliamentProfileUrl  String?  @map("parliament_profile_url")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
+  id                   Int       @id @default(autoincrement())
+  entityId             Int       @unique @map("entity_id")
+  personId             Int       @unique @map("person_id")
+  politicianExternalId Int?      @unique @map("politician_external_id")
+  house                String?
+  membershipFrom       String?   @map("membership_from")
+  membershipFromId     Int?      @map("membership_from_id")
+  membershipStartDate  DateTime? @map("membership_start_date")
+  currentPartyId       Int?      @map("current_party_id")
+  currentConstituency  String?   @map("current_constituency")
+  parliamentProfileUrl String?   @map("parliament_profile_url")
+  currentRoleTitle     String?   @map("current_role_title")
+  influenceScore       Float?    @map("influence_score")
+  visibilityScore      Float?    @map("visibility_score")
+  monitorWeight        Float?    @map("monitor_weight")
+  isCurrent            Boolean   @default(true) @map("is_current")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
-  person        Person @relation(fields: [personId], references: [id], onDelete: Cascade)
-  currentParty  Party? @relation(fields: [currentPartyId], references: [id], onDelete: SetNull)
+  entity       Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  person       Person @relation(fields: [personId], references: [id], onDelete: Cascade)
+  currentParty Party? @relation(fields: [currentPartyId], references: [id], onDelete: SetNull)
 
   @@map("politician_profiles")
   @@index([currentPartyId])
+  @@index([isCurrent])
 }
 
 model Organisation {
@@ -703,10 +306,10 @@ model Organisation {
   createdAt           DateTime @default(now()) @map("created_at")
   updatedAt           DateTime @updatedAt @map("updated_at")
 
-  entity                 Entity               @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  organisationType       OrganisationType?    @relation(fields: [organisationTypeId], references: [id], onDelete: SetNull)
-  personRoles            PersonOrganisationRole[]
-  billRelationships      BillOrganisationRelationship[]
+  entity               Entity                 @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  organisationType     OrganisationType?      @relation(fields: [organisationTypeId], references: [id], onDelete: SetNull)
+  personRoles          PersonOrganisationRole[]
+  billRelationships    BillOrganisationRelationship[]
 
   @@map("organisations")
   @@index([organisationTypeId])
@@ -727,10 +330,10 @@ model Committee {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  entity              Entity          @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  committeeType       CommitteeType?  @relation(fields: [committeeTypeId], references: [id], onDelete: SetNull)
-  politicianRoles     PoliticianCommitteeRole[]
-  billRelationships   BillCommitteeRelationship[]
+  entity            Entity                     @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  committeeType     CommitteeType?             @relation(fields: [committeeTypeId], references: [id], onDelete: SetNull)
+  politicianRoles   PoliticianCommitteeRole[]
+  billRelationships BillCommitteeRelationship[]
 
   @@map("committees")
   @@index([committeeTypeId])
@@ -739,31 +342,39 @@ model Committee {
 }
 
 model Bill {
-  id                       Int      @id @default(autoincrement())
-  entityId                 Int      @unique @map("entity_id")
-  externalId               String   @unique @map("external_id")
+  id                       Int       @id @default(autoincrement())
+  entityId                 Int       @unique @map("entity_id")
+  externalId               String    @unique @map("external_id")
   title                    String
-  shortTitle               String?  @map("short_title")
-  billType                 String?  @map("bill_type")
+  shortTitle               String?   @map("short_title")
+  billType                 String?   @map("bill_type")
   session                  String?
   house                    String?
-  originatingHouse         String?  @map("originating_house")
+  originatingHouse         String?   @map("originating_house")
   summary                  String?
   description              String?
   introducedAt             DateTime? @map("introduced_at")
-  currentStageOccurrenceId Int?     @unique @map("current_stage_occurrence_id")
-  isActive                 Boolean  @default(true) @map("is_active")
+  currentStageOccurrenceId Int?      @unique @map("current_stage_occurrence_id")
+  isActive                 Boolean   @default(true) @map("is_active")
   lastApiUpdatedAt         DateTime? @map("last_api_updated_at")
-  createdAt                DateTime @default(now()) @map("created_at")
-  updatedAt                DateTime @updatedAt @map("updated_at")
+  relevanceScore           Float?    @map("relevance_score")
+  priorityScore            Float?    @map("priority_score")
+  impactScore              Float?    @map("impact_score")
+  monitorMatchScore        Float?    @map("monitor_match_score")
+  confidenceScore          Float?    @map("confidence_score")
+  importanceLabel          ImportanceLabel? @map("importance_label")
+  briefSummary             String?   @map("brief_summary")
+  clientImpactSummary      String?   @map("client_impact_summary")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
 
-  entity                Entity                     @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  currentStageOccurrence BillStageOccurrence?      @relation("BillCurrentStage", fields: [currentStageOccurrenceId], references: [id], onDelete: SetNull)
-  stageOccurrences      BillStageOccurrence[]      @relation("BillStageOccurrences")
-  committeeRelationships BillCommitteeRelationship[]
-  personRelationships   BillPersonRelationship[]
+  entity                    Entity                       @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  currentStageOccurrence    BillStageOccurrence?         @relation("BillCurrentStage", fields: [currentStageOccurrenceId], references: [id], onDelete: SetNull)
+  stageOccurrences          BillStageOccurrence[]        @relation("BillStageOccurrences")
+  committeeRelationships    BillCommitteeRelationship[]
+  personRelationships       BillPersonRelationship[]
   organisationRelationships BillOrganisationRelationship[]
-  eventRelationships    EventBillRelationship[]
+  eventRelationships        EventBillRelationship[]
 
   @@map("bills")
   @@index([billType])
@@ -771,51 +382,147 @@ model Bill {
   @@index([house])
   @@index([isActive])
   @@index([introducedAt])
+  @@index([importanceLabel])
 }
 
 model Event {
-  id           Int      @id @default(autoincrement())
-  entityId     Int      @unique @map("entity_id")
-  externalId   String?  @unique @map("external_id")
-  eventType    String   @map("event_type")
-  title        String
-  summary      String?
-  description  String?
-  startsAt     DateTime? @map("starts_at")
-  endsAt       DateTime? @map("ends_at")
-  location     String?
-  status       String?
-  sourceSystem String?  @map("source_system")
-  payload      Json?
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id                  Int                @id @default(autoincrement())
+  entityId            Int                @unique @map("entity_id")
+  externalId          String?            @unique @map("external_id")
+  eventType           String             @map("event_type")
+  politicalEventType  PoliticalEventType? @map("political_event_type")
+  title               String
+  summary             String?
+  description         String?
+  startsAt            DateTime?          @map("starts_at")
+  endsAt              DateTime?          @map("ends_at")
+  location            String?
+  status              String?
+  sourceSystem        String?            @map("source_system")
+  sourceUrl           String?            @map("source_url")
+  sourceExternalId    String?            @map("source_external_id")
+  fetchedAt           DateTime?          @map("fetched_at")
+  firstSeenAt         DateTime?          @map("first_seen_at")
+  lastSeenAt          DateTime?          @map("last_seen_at")
+  lastProcessedAt     DateTime?          @map("last_processed_at")
+  relevanceScore      Float?             @map("relevance_score")
+  priorityScore       Float?             @map("priority_score")
+  signalScore         Float?             @map("signal_score")
+  impactScore         Float?             @map("impact_score")
+  monitorMatchScore   Float?             @map("monitor_match_score")
+  confidenceScore     Float?             @map("confidence_score")
+  importanceLabel     ImportanceLabel?   @map("importance_label")
+  isKeyUpdate         Boolean            @default(false) @map("is_key_update")
+  whyRelevant         String?            @map("why_relevant")
+  briefSummary        String?            @map("brief_summary")
+  clientImpactSummary String?            @map("client_impact_summary")
+  changeType          ChangeType?        @map("change_type")
+  changeSummary       String?            @map("change_summary")
+  contentHash         String?            @map("content_hash")
+  changeHash          String?            @map("change_hash")
+  payload             Json?
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
 
-  entity         Entity                @relation(fields: [entityId], references: [id], onDelete: Cascade)
-  participants   EventParticipant[]
-  billRelations  EventBillRelationship[]
+  entity        Entity                 @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  participants  EventParticipant[]
+  billRelations EventBillRelationship[]
 
   @@map("events")
   @@index([eventType])
+  @@index([politicalEventType])
   @@index([startsAt])
   @@index([endsAt])
   @@index([status])
   @@index([sourceSystem])
+  @@index([importanceLabel])
+}
+
+model News {
+  id                  Int               @id @default(autoincrement())
+  entityId            Int               @unique @map("entity_id")
+  externalId          String            @unique @map("external_id")
+  title               String
+  description         String?
+  summary             String?
+  publicTimestamp     String?           @map("public_timestamp")
+  link                String?
+  publishedAt         DateTime?         @map("published_at")
+  sourceSystem        String?           @map("source_system")
+  sourceUrl           String?           @map("source_url")
+  sourceExternalId    String?           @map("source_external_id")
+  fetchedAt           DateTime?         @map("fetched_at")
+  firstSeenAt         DateTime?         @map("first_seen_at")
+  lastSeenAt          DateTime?         @map("last_seen_at")
+  lastProcessedAt     DateTime?         @map("last_processed_at")
+  relevanceScore      Float?            @map("relevance_score")
+  priorityScore       Float?            @map("priority_score")
+  signalScore         Float?            @map("signal_score")
+  impactScore         Float?            @map("impact_score")
+  monitorMatchScore   Float?            @map("monitor_match_score")
+  confidenceScore     Float?            @map("confidence_score")
+  importanceLabel     ImportanceLabel?  @map("importance_label")
+  isKeyUpdate         Boolean           @default(false) @map("is_key_update")
+  whyRelevant         String?           @map("why_relevant")
+  briefSummary        String?           @map("brief_summary")
+  clientImpactSummary String?           @map("client_impact_summary")
+  changeType          ChangeType?       @map("change_type")
+  changeSummary       String?           @map("change_summary")
+  contentHash         String?           @map("content_hash")
+  changeHash          String?           @map("change_hash")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
+
+  entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@map("news")
+  @@index([publishedAt])
+  @@index([sourceSystem])
+  @@index([firstSeenAt])
+  @@index([lastSeenAt])
+  @@index([relevanceScore])
+  @@index([priorityScore])
+  @@index([monitorMatchScore])
+  @@index([importanceLabel])
+  @@index([changeType])
+  @@index([isKeyUpdate])
 }
 
 model Publication {
-  id              Int      @id @default(autoincrement())
-  entityId        Int      @unique @map("entity_id")
-  externalId      String   @unique @map("external_id")
-  publicationType String?  @map("publication_type")
-  title           String
-  summary         String?
-  description     String?
-  publishedAt     DateTime? @map("published_at")
-  url             String?
-  sourceSystem    String?  @map("source_system")
-  payload         Json?
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id                  Int               @id @default(autoincrement())
+  entityId            Int               @unique @map("entity_id")
+  externalId          String            @unique @map("external_id")
+  publicationType     String?           @map("publication_type")
+  title               String
+  summary             String?
+  description         String?
+  publishedAt         DateTime?         @map("published_at")
+  url                 String?
+  sourceSystem        String?           @map("source_system")
+  sourceUrl           String?           @map("source_url")
+  sourceExternalId    String?           @map("source_external_id")
+  fetchedAt           DateTime?         @map("fetched_at")
+  firstSeenAt         DateTime?         @map("first_seen_at")
+  lastSeenAt          DateTime?         @map("last_seen_at")
+  lastProcessedAt     DateTime?         @map("last_processed_at")
+  relevanceScore      Float?            @map("relevance_score")
+  priorityScore       Float?            @map("priority_score")
+  signalScore         Float?            @map("signal_score")
+  impactScore         Float?            @map("impact_score")
+  monitorMatchScore   Float?            @map("monitor_match_score")
+  confidenceScore     Float?            @map("confidence_score")
+  importanceLabel     ImportanceLabel?  @map("importance_label")
+  isKeyUpdate         Boolean           @default(false) @map("is_key_update")
+  whyRelevant         String?           @map("why_relevant")
+  briefSummary        String?           @map("brief_summary")
+  clientImpactSummary String?           @map("client_impact_summary")
+  changeType          ChangeType?       @map("change_type")
+  changeSummary       String?           @map("change_summary")
+  contentHash         String?           @map("content_hash")
+  changeHash          String?           @map("change_hash")
+  payload             Json?
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
 
   entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
 
@@ -823,23 +530,30 @@ model Publication {
   @@index([publicationType])
   @@index([publishedAt])
   @@index([sourceSystem])
+  @@index([importanceLabel])
 }
 
 model Petition {
-  id             Int      @id @default(autoincrement())
-  entityId       Int      @unique @map("entity_id")
-  externalId     String   @unique @map("external_id")
-  title          String
-  summary        String?
-  description    String?
-  petitionState  String?  @map("petition_state")
-  openedAt       DateTime? @map("opened_at")
-  closedAt       DateTime? @map("closed_at")
-  signatureCount Int?     @map("signature_count")
-  url            String?
-  payload        Json?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  id                  Int               @id @default(autoincrement())
+  entityId            Int               @unique @map("entity_id")
+  externalId          String            @unique @map("external_id")
+  title               String
+  summary             String?
+  description         String?
+  petitionState       String?           @map("petition_state")
+  openedAt            DateTime?         @map("opened_at")
+  closedAt            DateTime?         @map("closed_at")
+  signatureCount      Int?              @map("signature_count")
+  url                 String?
+  sourceSystem        String?           @map("source_system")
+  relevanceScore      Float?            @map("relevance_score")
+  priorityScore       Float?            @map("priority_score")
+  monitorMatchScore   Float?            @map("monitor_match_score")
+  confidenceScore     Float?            @map("confidence_score")
+  importanceLabel     ImportanceLabel?  @map("importance_label")
+  briefSummary        String?           @map("brief_summary")
+  createdAt           DateTime          @default(now()) @map("created_at")
+  updatedAt           DateTime          @updatedAt @map("updated_at")
 
   entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
 
@@ -847,29 +561,30 @@ model Petition {
   @@index([petitionState])
   @@index([openedAt])
   @@index([closedAt])
+  @@index([importanceLabel])
 }
 
 model EntityRelationship {
-  id               Int      @id @default(autoincrement())
-  subjectEntityId  Int      @map("subject_entity_id")
-  relationshipTypeId Int    @map("relationship_type_id")
-  objectEntityId   Int      @map("object_entity_id")
-  status           String?
-  isCurrent        Boolean  @default(true) @map("is_current")
-  startDate        DateTime? @map("start_date")
-  endDate          DateTime? @map("end_date")
-  strengthScore    Float?   @map("strength_score")
-  confidenceScore  Float?   @map("confidence_score")
-  sourceOfTruth    String?  @map("source_of_truth")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  id                 Int       @id @default(autoincrement())
+  subjectEntityId    Int       @map("subject_entity_id")
+  relationshipTypeId Int       @map("relationship_type_id")
+  objectEntityId     Int       @map("object_entity_id")
+  status             String?
+  isCurrent          Boolean   @default(true) @map("is_current")
+  startDate          DateTime? @map("start_date")
+  endDate            DateTime? @map("end_date")
+  strengthScore      Float?    @map("strength_score")
+  confidenceScore    Float?    @map("confidence_score")
+  sourceOfTruth      String?   @map("source_of_truth")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  subjectEntity    Entity            @relation("EntityRelationshipSubject", fields: [subjectEntityId], references: [id], onDelete: Cascade)
-  relationshipType RelationshipType  @relation(fields: [relationshipTypeId], references: [id], onDelete: Restrict)
-  objectEntity     Entity            @relation("EntityRelationshipObject", fields: [objectEntityId], references: [id], onDelete: Cascade)
+  subjectEntity    Entity           @relation("EntityRelationshipSubject", fields: [subjectEntityId], references: [id], onDelete: Cascade)
+  relationshipType RelationshipType @relation(fields: [relationshipTypeId], references: [id], onDelete: Restrict)
+  objectEntity     Entity           @relation("EntityRelationshipObject", fields: [objectEntityId], references: [id], onDelete: Cascade)
 
-  classifications  RelationshipClassification[]
-  evidence         RelationshipEvidence[]
+  classifications RelationshipClassification[]
+  evidence        RelationshipEvidence[]
 
   @@map("entity_relationships")
   @@index([subjectEntityId])
@@ -880,24 +595,24 @@ model EntityRelationship {
 }
 
 model PersonOrganisationRole {
-  id                 Int      @id @default(autoincrement())
-  personId           Int      @map("person_id")
-  organisationId     Int      @map("organisation_id")
-  roleTitle          String   @map("role_title")
-  roleType           String?  @map("role_type")
-  seniority          String?
-  isCurrent          Boolean  @default(true) @map("is_current")
-  startDate          DateTime? @map("start_date")
-  endDate            DateTime? @map("end_date")
-  sourceSystem       String?  @map("source_system")
-  sourceExternalId   String?  @map("source_external_id")
-  lastVerifiedAt     DateTime? @map("last_verified_at")
-  confidenceScore    Float?   @map("confidence_score")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  id               Int       @id @default(autoincrement())
+  personId         Int       @map("person_id")
+  organisationId   Int       @map("organisation_id")
+  roleTitle        String    @map("role_title")
+  roleType         String?   @map("role_type")
+  seniority        String?
+  isCurrent        Boolean   @default(true) @map("is_current")
+  startDate        DateTime? @map("start_date")
+  endDate          DateTime? @map("end_date")
+  sourceSystem     String?   @map("source_system")
+  sourceExternalId String?   @map("source_external_id")
+  lastVerifiedAt   DateTime? @map("last_verified_at")
+  confidenceScore  Float?    @map("confidence_score")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
-  person        Person       @relation(fields: [personId], references: [id], onDelete: Cascade)
-  organisation  Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
+  person       Person       @relation(fields: [personId], references: [id], onDelete: Cascade)
+  organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
 
   @@map("person_organisation_roles")
   @@index([personId])
@@ -907,57 +622,57 @@ model PersonOrganisationRole {
 }
 
 model PoliticianPartyMembership {
-  id           Int      @id @default(autoincrement())
-  personId     Int      @map("person_id")
-  partyId      Int      @map("party_id")
+  id           Int       @id @default(autoincrement())
+  politicianId Int       @map("politician_id")
+  partyId      Int       @map("party_id")
   house        String?
-  isCurrent    Boolean  @default(true) @map("is_current")
+  isCurrent    Boolean   @default(true) @map("is_current")
   startDate    DateTime? @map("start_date")
   endDate      DateTime? @map("end_date")
-  sourceSystem String?  @map("source_system")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  sourceSystem String?   @map("source_system")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
-  party  Party  @relation(fields: [partyId], references: [id], onDelete: Cascade)
+  politician PoliticianProfile @relation(fields: [politicianId], references: [id], onDelete: Cascade)
+  party      Party             @relation(fields: [partyId], references: [id], onDelete: Cascade)
 
   @@map("politician_party_memberships")
-  @@index([personId])
+  @@index([politicianId])
   @@index([partyId])
   @@index([isCurrent])
 }
 
 model PoliticianCommitteeRole {
-  id           Int      @id @default(autoincrement())
-  personId     Int      @map("person_id")
-  committeeId  Int      @map("committee_id")
-  roleTitle    String?  @map("role_title")
-  isCurrent    Boolean  @default(true) @map("is_current")
+  id           Int       @id @default(autoincrement())
+  politicianId Int       @map("politician_id")
+  committeeId  Int       @map("committee_id")
+  roleTitle    String?   @map("role_title")
+  isCurrent    Boolean   @default(true) @map("is_current")
   startDate    DateTime? @map("start_date")
   endDate      DateTime? @map("end_date")
-  sourceSystem String?  @map("source_system")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  sourceSystem String?   @map("source_system")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
 
-  person    Person    @relation(fields: [personId], references: [id], onDelete: Cascade)
-  committee Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
+  politician PoliticianProfile @relation(fields: [politicianId], references: [id], onDelete: Cascade)
+  committee  Committee         @relation(fields: [committeeId], references: [id], onDelete: Cascade)
 
   @@map("politician_committee_roles")
-  @@index([personId])
+  @@index([politicianId])
   @@index([committeeId])
   @@index([isCurrent])
 }
 
 model BillCommitteeRelationship {
-  id               Int      @id @default(autoincrement())
-  billId           Int      @map("bill_id")
-  committeeId      Int      @map("committee_id")
-  relationshipKind String   @map("relationship_kind")
-  isCurrent        Boolean  @default(true) @map("is_current")
+  id               Int       @id @default(autoincrement())
+  billId           Int       @map("bill_id")
+  committeeId      Int       @map("committee_id")
+  relationshipKind String    @map("relationship_kind")
+  isCurrent        Boolean   @default(true) @map("is_current")
   startDate        DateTime? @map("start_date")
   endDate          DateTime? @map("end_date")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   bill      Bill      @relation(fields: [billId], references: [id], onDelete: Cascade)
   committee Committee @relation(fields: [committeeId], references: [id], onDelete: Cascade)
@@ -970,15 +685,15 @@ model BillCommitteeRelationship {
 }
 
 model BillPersonRelationship {
-  id               Int      @id @default(autoincrement())
-  billId           Int      @map("bill_id")
-  personId         Int      @map("person_id")
-  relationshipKind String   @map("relationship_kind")
-  isCurrent        Boolean  @default(true) @map("is_current")
+  id               Int       @id @default(autoincrement())
+  billId           Int       @map("bill_id")
+  personId         Int       @map("person_id")
+  relationshipKind String    @map("relationship_kind")
+  isCurrent        Boolean   @default(true) @map("is_current")
   startDate        DateTime? @map("start_date")
   endDate          DateTime? @map("end_date")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   bill   Bill   @relation(fields: [billId], references: [id], onDelete: Cascade)
   person Person @relation(fields: [personId], references: [id], onDelete: Cascade)
@@ -991,15 +706,15 @@ model BillPersonRelationship {
 }
 
 model BillOrganisationRelationship {
-  id               Int      @id @default(autoincrement())
-  billId           Int      @map("bill_id")
-  organisationId   Int      @map("organisation_id")
-  relationshipKind String   @map("relationship_kind")
-  isCurrent        Boolean  @default(true) @map("is_current")
+  id               Int       @id @default(autoincrement())
+  billId           Int       @map("bill_id")
+  organisationId   Int       @map("organisation_id")
+  relationshipKind String    @map("relationship_kind")
+  isCurrent        Boolean   @default(true) @map("is_current")
   startDate        DateTime? @map("start_date")
   endDate          DateTime? @map("end_date")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   bill         Bill         @relation(fields: [billId], references: [id], onDelete: Cascade)
   organisation Organisation @relation(fields: [organisationId], references: [id], onDelete: Cascade)
@@ -1012,17 +727,17 @@ model BillOrganisationRelationship {
 }
 
 model EventParticipant {
-  id               Int      @id @default(autoincrement())
-  eventId          Int      @map("event_id")
-  participantId    Int      @map("participant_id")
+  id               Int       @id @default(autoincrement())
+  eventId          Int       @map("event_id")
+  participantId    Int       @map("participant_id")
   participantType  EntityType? @map("participant_type")
-  roleAtEvent      String?  @map("role_at_event")
-  attendanceStatus String?  @map("attendance_status")
-  isSpeaker        Boolean  @default(false) @map("is_speaker")
-  isWitness        Boolean  @default(false) @map("is_witness")
-  sourceSystem     String?  @map("source_system")
-  createdAt        DateTime @default(now()) @map("created_at")
-  updatedAt        DateTime @updatedAt @map("updated_at")
+  roleAtEvent      String?   @map("role_at_event")
+  attendanceStatus String?   @map("attendance_status")
+  isSpeaker        Boolean   @default(false) @map("is_speaker")
+  isWitness        Boolean   @default(false) @map("is_witness")
+  sourceSystem     String?   @map("source_system")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   event       Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
   participant Entity @relation(fields: [participantId], references: [id], onDelete: Cascade)
@@ -1052,22 +767,22 @@ model EventBillRelationship {
 }
 
 model BillStageOccurrence {
-  id                 Int      @id @default(autoincrement())
-  billId             Int      @map("bill_id")
-  billStageTypeId    Int      @map("bill_stage_type_id")
+  id                 Int       @id @default(autoincrement())
+  billId             Int       @map("bill_id")
+  billStageTypeId    Int       @map("bill_stage_type_id")
   house              String?
   occurredAt         DateTime? @map("occurred_at")
   completedAt        DateTime? @map("completed_at")
   status             String?
-  sequenceWithinBill Int?     @map("sequence_within_bill")
-  sourceUrl          String?  @map("source_url")
+  sequenceWithinBill Int?      @map("sequence_within_bill")
+  sourceUrl          String?   @map("source_url")
   payload            Json?
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
-  bill          Bill          @relation("BillStageOccurrences", fields: [billId], references: [id], onDelete: Cascade)
-  billStageType BillStageType @relation(fields: [billStageTypeId], references: [id], onDelete: Restrict)
-  currentForBill Bill?        @relation("BillCurrentStage")
+  bill           Bill          @relation("BillStageOccurrences", fields: [billId], references: [id], onDelete: Cascade)
+  billStageType  BillStageType @relation(fields: [billStageTypeId], references: [id], onDelete: Restrict)
+  currentForBill Bill?         @relation("BillCurrentStage")
 
   @@map("bill_stage_occurrences")
   @@index([billId])
@@ -1091,44 +806,44 @@ model EntityClassification {
   classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
 
   @@map("entity_classifications")
+  @@unique([entityId, classificationItemId])
   @@index([entityId])
   @@index([classificationItemId])
   @@index([isPrimary])
-  @@unique([entityId, classificationItemId])
 }
 
 model RelationshipClassification {
-  id                   Int          @id @default(autoincrement())
-  entityRelationshipId Int          @map("entity_relationship_id")
-  classificationItemId Int          @map("classification_item_id")
-  confidenceScore      Float?       @map("confidence_score")
-  isPrimary            Boolean      @default(false) @map("is_primary")
-  createdAt            DateTime     @default(now()) @map("created_at")
-  updatedAt            DateTime     @updatedAt @map("updated_at")
+  id                   Int       @id @default(autoincrement())
+  entityRelationshipId Int       @map("entity_relationship_id")
+  classificationItemId Int       @map("classification_item_id")
+  confidenceScore      Float?    @map("confidence_score")
+  isPrimary            Boolean   @default(false) @map("is_primary")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
   entityRelationship EntityRelationship @relation(fields: [entityRelationshipId], references: [id], onDelete: Cascade)
   classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
 
   @@map("relationship_classifications")
+  @@unique([entityRelationshipId, classificationItemId])
   @@index([entityRelationshipId])
   @@index([classificationItemId])
   @@index([isPrimary])
-  @@unique([entityRelationshipId, classificationItemId])
 }
 
 model SourceRecord {
-  id                    Int      @id @default(autoincrement())
-  sourceSystem          String   @map("source_system")
-  externalId            String?  @map("external_id")
-  recordType            String   @map("record_type")
+  id                    Int       @id @default(autoincrement())
+  sourceSystem          String    @map("source_system")
+  externalId            String?   @map("external_id")
+  recordType            String    @map("record_type")
   url                   String?
   title                 String?
   publishedAt           DateTime? @map("published_at")
   fetchedAt             DateTime? @map("fetched_at")
-  rawPayload            Json?    @map("raw_payload")
-  normalizedPayloadHash String?  @map("normalized_payload_hash")
-  createdAt             DateTime @default(now()) @map("created_at")
-  updatedAt             DateTime @updatedAt @map("updated_at")
+  rawPayload            Json?     @map("raw_payload")
+  normalizedPayloadHash String?   @map("normalized_payload_hash")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
   relationshipEvidence RelationshipEvidence[]
   entityMentions       EntityMention[]
@@ -1141,14 +856,14 @@ model SourceRecord {
 }
 
 model RelationshipEvidence {
-  id                   Int      @id @default(autoincrement())
-  entityRelationshipId Int      @map("entity_relationship_id")
-  sourceRecordId       Int      @map("source_record_id")
-  evidenceType         String?  @map("evidence_type")
+  id                   Int       @id @default(autoincrement())
+  entityRelationshipId Int       @map("entity_relationship_id")
+  sourceRecordId       Int       @map("source_record_id")
+  evidenceType         String?   @map("evidence_type")
   excerpt              String?
-  confidenceScore      Float?   @map("confidence_score")
+  confidenceScore      Float?    @map("confidence_score")
   observedAt           DateTime? @map("observed_at")
-  createdAt            DateTime @default(now()) @map("created_at")
+  createdAt            DateTime  @default(now()) @map("created_at")
 
   entityRelationship EntityRelationship @relation(fields: [entityRelationshipId], references: [id], onDelete: Cascade)
   sourceRecord       SourceRecord       @relation(fields: [sourceRecordId], references: [id], onDelete: Cascade)
@@ -1160,14 +875,14 @@ model RelationshipEvidence {
 }
 
 model EntityMention {
-  id           Int      @id @default(autoincrement())
-  sourceRecordId Int    @map("source_record_id")
-  entityId     Int      @map("entity_id")
-  mentionText  String   @map("mention_text")
-  mentionType  String?  @map("mention_type")
-  offsetStart  Int?     @map("offset_start")
-  offsetEnd    Int?     @map("offset_end")
-  createdAt    DateTime @default(now()) @map("created_at")
+  id             Int      @id @default(autoincrement())
+  sourceRecordId Int      @map("source_record_id")
+  entityId       Int      @map("entity_id")
+  mentionText    String   @map("mention_text")
+  mentionType    String?  @map("mention_type")
+  offsetStart    Int?     @map("offset_start")
+  offsetEnd      Int?     @map("offset_end")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   sourceRecord SourceRecord @relation(fields: [sourceRecordId], references: [id], onDelete: Cascade)
   entity       Entity       @relation(fields: [entityId], references: [id], onDelete: Cascade)
@@ -1206,19 +921,19 @@ model ExternalMapping {
   entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
 
   @@map("external_mappings")
+  @@unique([sourceSystem, externalId])
   @@index([entityId])
   @@index([sourceSystem])
   @@index([externalId])
-  @@unique([sourceSystem, externalId])
 }
 
 model EntityStatusHistory {
-  id           Int      @id @default(autoincrement())
-  entityId     Int      @map("entity_id")
-  status       String
+  id            Int       @id @default(autoincrement())
+  entityId      Int       @map("entity_id")
+  status        String
   effectiveDate DateTime? @map("effective_date")
-  sourceSystem String?  @map("source_system")
-  createdAt    DateTime @default(now()) @map("created_at")
+  sourceSystem  String?   @map("source_system")
+  createdAt     DateTime  @default(now()) @map("created_at")
 
   entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
 
@@ -1229,19 +944,19 @@ model EntityStatusHistory {
 }
 
 model ImportRun {
-  id             Int      @id @default(autoincrement())
-  sourceSystem   String   @map("source_system")
-  jobName        String   @map("job_name")
+  id             Int       @id @default(autoincrement())
+  sourceSystem   String    @map("source_system")
+  jobName        String    @map("job_name")
   status         String
-  startedAt      DateTime @map("started_at")
+  startedAt      DateTime  @map("started_at")
   completedAt    DateTime? @map("completed_at")
-  recordsFetched Int?     @map("records_fetched")
-  recordsCreated Int?     @map("records_created")
-  recordsUpdated Int?     @map("records_updated")
-  recordsErrored Int?     @map("records_errored")
+  recordsFetched Int?      @map("records_fetched")
+  recordsCreated Int?      @map("records_created")
+  recordsUpdated Int?      @map("records_updated")
+  recordsErrored Int?      @map("records_errored")
   notes          String?
-  createdAt      DateTime @default(now()) @map("created_at")
-  updatedAt      DateTime @updatedAt @map("updated_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
   @@map("import_runs")
   @@index([sourceSystem])
