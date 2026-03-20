@@ -76,7 +76,7 @@ model Assistant {
 
 model ClassificationItem {
   id            Int                 @id @default(autoincrement())
-  externalId    Int?                @unique @map("external_id")
+  externalId    Int?                @map("external_id")
   type          ClassificationType
   slug          String?             @unique
   title         String
@@ -91,12 +91,13 @@ model ClassificationItem {
   createdAt     DateTime            @default(now()) @map("created_at")
   updatedAt     DateTime            @updatedAt @map("updated_at")
 
-  parent                    ClassificationItem?         @relation("ClassificationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children                  ClassificationItem[]        @relation("ClassificationHierarchy")
-  entityClassifications     EntityClassification[]
+  parent                      ClassificationItem?          @relation("ClassificationHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children                    ClassificationItem[]         @relation("ClassificationHierarchy")
+  entityClassifications       EntityClassification[]
   relationshipClassifications RelationshipClassification[]
 
   @@map("classification_items")
+  @@unique([externalId, type])
   @@index([type])
   @@index([isActive])
   @@index([parentId])
@@ -792,15 +793,15 @@ model BillStageOccurrence {
 }
 
 model EntityClassification {
-  id                   Int          @id @default(autoincrement())
-  entityId             Int          @map("entity_id")
-  classificationItemId Int          @map("classification_item_id")
-  sourceSystem         String?      @map("source_system")
+  id                   Int           @id @default(autoincrement())
+  entityId             Int           @map("entity_id")
+  classificationItemId Int           @map("classification_item_id")
+  sourceSystem         String?       @map("source_system")
   sourceMethod         SourceMethod? @map("source_method")
-  confidenceScore      Float?       @map("confidence_score")
-  isPrimary            Boolean      @default(false) @map("is_primary")
-  createdAt            DateTime     @default(now()) @map("created_at")
-  updatedAt            DateTime     @updatedAt @map("updated_at")
+  confidenceScore      Float?        @map("confidence_score")
+  isPrimary            Boolean       @default(false) @map("is_primary")
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @updatedAt @map("updated_at")
 
   entity             Entity             @relation(fields: [entityId], references: [id], onDelete: Cascade)
   classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
@@ -813,13 +814,13 @@ model EntityClassification {
 }
 
 model RelationshipClassification {
-  id                   Int       @id @default(autoincrement())
-  entityRelationshipId Int       @map("entity_relationship_id")
-  classificationItemId Int       @map("classification_item_id")
-  confidenceScore      Float?    @map("confidence_score")
-  isPrimary            Boolean   @default(false) @map("is_primary")
-  createdAt            DateTime  @default(now()) @map("created_at")
-  updatedAt            DateTime  @updatedAt @map("updated_at")
+  id                   Int      @id @default(autoincrement())
+  entityRelationshipId Int      @map("entity_relationship_id")
+  classificationItemId Int      @map("classification_item_id")
+  confidenceScore      Float?   @map("confidence_score")
+  isPrimary            Boolean  @default(false) @map("is_primary")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
 
   entityRelationship EntityRelationship @relation(fields: [entityRelationshipId], references: [id], onDelete: Cascade)
   classificationItem ClassificationItem @relation(fields: [classificationItemId], references: [id], onDelete: Cascade)
